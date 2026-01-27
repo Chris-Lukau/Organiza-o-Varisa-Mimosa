@@ -1,0 +1,7 @@
+{
+  "name": "AutoPeças Pro - E-commerce de Peças de Carros",
+  "description": "Sistema completo de e-commerce para peças automotivas com checkout integrado para Multicaixa Express e pagamentos internacionais.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
