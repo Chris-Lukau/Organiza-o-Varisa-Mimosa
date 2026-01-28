@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-// Fix: Re-importing useNavigate to fix module resolution error
 import { useNavigate } from 'react-router-dom';
-import { Mail, Phone, Lock, Chrome, Loader2, ArrowRight } from 'lucide-react';
+// Fix: Added User as UserIcon to lucide-react imports
+import { Mail, Phone, Lock, Chrome, Loader2, ArrowRight, Zap, User as UserIcon } from 'lucide-react';
 import { User } from '../types';
 
 interface AuthPageProps {
@@ -14,36 +14,72 @@ const AuthPage: React.FC<AuthPageProps> = ({ setUser }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [method, setMethod] = useState<'email' | 'phone'>('email');
+  
+  // States para campos
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleDemoCredentials = (role: 'admin' | 'customer') => {
+    setMethod('email');
+    if (role === 'admin') {
+      setEmail('admin.pro@autopecas.ao');
+      setPassword('admin123');
+    } else {
+      setEmail('cliente.demo@email.ao');
+      setPassword('cliente123');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simular autenticação
+    // Simular autenticação real
     await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const isDemoAdmin = email === 'admin.pro@autopecas.ao';
     
     const mockUser: User = {
       id: 'usr-' + Math.random().toString(36).substr(2, 4),
-      name: isLogin ? 'João Manuel' : 'Novo Utilizador',
-      email: 'user@example.com',
-      role: 'admin' // Definido como admin para facilitar testes do painel
+      name: isDemoAdmin ? 'Administrador Central' : 'João Manuel',
+      email: email || 'user@example.com',
+      role: isDemoAdmin ? 'admin' : 'customer'
     };
     
     localStorage.setItem('user', JSON.stringify(mockUser));
     setUser(mockUser);
     setLoading(false);
-    navigate('/');
+    navigate(isDemoAdmin ? '/admin' : '/profile');
   };
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
         <div className="bg-gray-900 py-8 px-6 text-center">
-          <h2 className="text-3xl font-black text-white">{isLogin ? 'Bem-vindo de volta' : 'Crie sua conta'}</h2>
-          <p className="text-gray-400 mt-2">{isLogin ? 'Acesse seu painel e pedidos' : 'Junte-se à maior rede de autopeças'}</p>
+          <h2 className="text-3xl font-black text-white">{isLogin ? 'Acesso ao Portal' : 'Crie sua conta'}</h2>
+          <p className="text-gray-400 mt-2">{isLogin ? 'Gerencie suas compras e perfil' : 'Junte-se à maior rede de autopeças'}</p>
         </div>
 
         <div className="p-8">
-          {/* Method Switcher */}
+          {isLogin && (
+            <div className="grid grid-cols-2 gap-3 mb-8">
+               <button 
+                onClick={() => handleDemoCredentials('admin')}
+                className="flex items-center justify-center space-x-2 bg-blue-50 text-blue-700 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition border border-blue-200"
+               >
+                 <Zap size={14} />
+                 <span>Demo Admin</span>
+               </button>
+               <button 
+                onClick={() => handleDemoCredentials('customer')}
+                className="flex items-center justify-center space-x-2 bg-gray-50 text-gray-700 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition border border-gray-200"
+               >
+                 {/* Fix: Replaced User (type) with UserIcon (lucide-react component) */}
+                 <UserIcon size={14} />
+                 <span>Demo Cliente</span>
+               </button>
+            </div>
+          )}
+
           <div className="flex bg-gray-50 rounded-xl p-1 mb-8">
             <button 
               onClick={() => setMethod('email')}
@@ -67,7 +103,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ setUser }) => {
                   required
                   type="email" 
                   placeholder="Seu email" 
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition font-medium"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
                 />
               </div>
             ) : (
@@ -77,7 +115,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ setUser }) => {
                   required
                   type="tel" 
                   placeholder="Ex: 923 000 000" 
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition font-medium"
                 />
               </div>
             )}
@@ -88,32 +126,24 @@ const AuthPage: React.FC<AuthPageProps> = ({ setUser }) => {
                 required
                 type="password" 
                 placeholder="Palavra-passe" 
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition"
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition font-medium"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
               />
             </div>
 
             <button 
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl flex items-center justify-center space-x-2 transition"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl flex items-center justify-center space-x-2 transition shadow-xl shadow-blue-100"
             >
               {loading ? <Loader2 className="animate-spin" /> : (
                 <>
-                  <span>{isLogin ? 'Entrar Agora' : 'Finalizar Cadastro'}</span>
+                  <span className="uppercase tracking-widest text-sm">{isLogin ? 'Entrar Agora' : 'Finalizar Cadastro'}</span>
                   <ArrowRight size={18} />
                 </>
               )}
             </button>
           </form>
-
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200"></div></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500 font-bold">Ou continue com</span></div>
-          </div>
-
-          <button className="w-full border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-3 rounded-xl flex items-center justify-center space-x-2 transition">
-            <Chrome size={20} />
-            <span>Google Workspace</span>
-          </button>
 
           <div className="mt-8 text-center text-sm text-gray-500">
             {isLogin ? (

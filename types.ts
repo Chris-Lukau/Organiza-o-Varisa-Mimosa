@@ -11,8 +11,7 @@ export enum Category {
 
 export enum PaymentMethod {
   MCX_EXPRESS = 'Multicaixa Express',
-  TRANSFER_IBAN = 'Transferência / IBAN',
-  CARD_STRIPE = 'Cartão (Visa/Mastercard)'
+  TRANSFER_IBAN = 'Transferência / IBAN'
 }
 
 export enum OrderStatus {
@@ -30,9 +29,9 @@ export interface Product {
   category: Category;
   brand: string;
   stock: number;
-  minStockThreshold?: number; // Limite para alerta de stock baixo
+  minStockThreshold?: number; 
   imageUrl: string;
-  images?: string[]; // Suporte para galeria completa
+  images?: string[];
 }
 
 export interface CartItem extends Product {

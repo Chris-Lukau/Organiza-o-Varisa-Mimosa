@@ -14,6 +14,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import AuthPage from './pages/AuthPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
+import ProfilePage from './pages/ProfilePage';
 import AdminDashboard from './pages/Admin/Dashboard';
 import AdminInventory from './pages/Admin/Inventory';
 import AdminReports from './pages/Admin/Reports';
@@ -164,12 +165,10 @@ const App: React.FC = () => {
 
   const logout = () => {
     localStorage.removeItem('user');
-    localStorage.removeItem('cart'); // Limpa carrinho ao sair por segurança
+    localStorage.removeItem('cart');
     setUser(null);
     setCart([]);
     setIsMenuOpen(false);
-    
-    // Método infalível para redirecionar para a home em HashRouter
     window.location.assign('#/'); 
     window.location.reload();
   };
@@ -225,7 +224,6 @@ const App: React.FC = () => {
             </div>
 
             <div className="flex items-center space-x-2 md:space-x-4">
-              {/* Oculta carrinho para Admin */}
               {!isAdmin && (
                 <Link to="/cart" className="relative p-3 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-2xl transition group">
                   <ShoppingCart size={22} />
@@ -240,13 +238,13 @@ const App: React.FC = () => {
               {user ? (
                 <div className="hidden md:flex items-center space-x-2">
                   <Link 
-                    to={isAdmin ? '/admin' : '/'} 
+                    to={isAdmin ? '/admin' : '/profile'} 
                     className={`flex items-center space-x-2 px-5 py-2.5 rounded-2xl font-bold text-sm shadow-xl transition active:scale-95 ${
                       isAdmin ? 'bg-blue-600 text-white shadow-blue-100' : 'bg-gray-900 text-white shadow-gray-200'
                     }`}
                   >
                     {isAdmin ? <Settings size={18} /> : <UserIcon size={18} />}
-                    <span>{isAdmin ? 'Painel Admin' : user.name.split(' ')[0]}</span>
+                    <span>{isAdmin ? 'Painel Admin' : 'Meu Perfil'}</span>
                   </Link>
                   <button onClick={logout} className="p-2.5 text-gray-400 hover:text-red-500 transition">
                     <LogOut size={20} />
@@ -274,7 +272,6 @@ const App: React.FC = () => {
             onClick={() => setIsMenuOpen(false)}
           />
 
-          {/* Barra Lateral Ocupando fundo sólido e colorido */}
           <div 
             className={`fixed top-0 right-0 h-full w-[85%] max-w-sm bg-gray-950 opacity-100 text-white z-[60] shadow-2xl transition-transform duration-500 ease-out transform md:hidden ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
           >
@@ -304,16 +301,16 @@ const App: React.FC = () => {
                   </Link>
                 ))}
                 
-                {isAdmin && (
-                  <div className="pt-6 mt-6 border-t border-white/10 space-y-2">
-                    <span className="px-5 py-2 text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] block">Administração</span>
+                {user && (
+                   <div className="pt-6 mt-6 border-t border-white/10 space-y-2">
+                    <span className="px-5 py-2 text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] block">Sua Conta</span>
                     <Link 
-                      to="/admin" 
+                      to={isAdmin ? "/admin" : "/profile"} 
                       onClick={() => setIsMenuOpen(false)}
                       className="flex items-center justify-between p-5 rounded-2xl text-xl font-black bg-blue-600 text-white transition shadow-2xl shadow-blue-900/40"
                     >
-                      <span>Painel Admin</span>
-                      <Settings size={22} />
+                      <span>{isAdmin ? 'Painel Admin' : 'Ver Perfil'}</span>
+                      {isAdmin ? <Settings size={22} /> : <UserIcon size={22} />}
                     </Link>
                   </div>
                 )}
@@ -322,13 +319,6 @@ const App: React.FC = () => {
               <div className="pt-8 border-t border-white/10">
                 {user ? (
                   <div className="space-y-4">
-                    <div className="flex items-center space-x-3 p-5 bg-white/5 rounded-2xl border border-white/5">
-                      <div className="bg-blue-600 p-2.5 rounded-xl text-white shadow-lg shadow-blue-900/20"><UserIcon size={18} /></div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-black text-white leading-none">{user.name}</span>
-                        <span className="text-[10px] font-bold text-blue-400 uppercase mt-1.5 tracking-widest">{user.role}</span>
-                      </div>
-                    </div>
                     <button 
                       onClick={logout} 
                       className="w-full flex items-center space-x-3 p-5 bg-red-600/10 text-red-500 border border-red-500/20 rounded-2xl font-black justify-center hover:bg-red-600 hover:text-white transition-all active:scale-95"
@@ -364,6 +354,7 @@ const App: React.FC = () => {
             <Route path="/auth" element={<AuthPage setUser={setUser} />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/profile" element={<ProfilePage user={user} orders={orders} />} />
             
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard orders={orders} products={products} />} />
