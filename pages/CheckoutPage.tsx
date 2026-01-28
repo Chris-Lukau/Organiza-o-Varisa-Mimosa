@@ -9,9 +9,10 @@ interface CheckoutPageProps {
   cart: CartItem[];
   user: User | null;
   clearCart: () => void;
+  onOrderComplete: (order: Order) => void;
 }
 
-const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart, user, clearCart }) => {
+const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart, user, clearCart, onOrderComplete }) => {
   const navigate = useNavigate();
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.MCX_EXPRESS);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -44,22 +45,25 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart, user, clearCart }) =>
     setIsProcessing(true);
     
     const mockOrder: Order = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: 'ORD-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
       userId: user.id,
-      items: cart,
+      items: [...cart],
       total,
       paymentMethod: method,
-      status: OrderStatus.PENDING,
+      status: OrderStatus.PAID, // Simula pagamento confirmado para este demo
       createdAt: new Date().toISOString()
     };
 
     const result = await processPayment(mockOrder, method);
-    setPaymentResult(result);
-    setIsProcessing(false);
     
     if (result.success) {
+      setPaymentResult(result);
+      onOrderComplete(mockOrder);
       clearCart();
+    } else {
+      setPaymentResult(result);
     }
+    setIsProcessing(false);
   };
 
   if (paymentResult) {
@@ -79,7 +83,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart, user, clearCart }) =>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button onClick={() => navigate('/')} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold">Continuar Comprando</button>
-            <button className="bg-gray-100 text-gray-700 px-8 py-3 rounded-xl font-bold">Minhas Compras</button>
+            <button onClick={() => navigate('/admin/reports')} className="bg-gray-100 text-gray-700 px-8 py-3 rounded-xl font-bold">Ver Pedido</button>
           </div>
         </div>
       </div>
@@ -92,7 +96,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart, user, clearCart }) =>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          {/* Payment Methods */}
           <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <h2 className="text-lg font-bold mb-6 flex items-center space-x-2">
               <Smartphone className="text-blue-600" size={20} />
@@ -135,36 +138,30 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart, user, clearCart }) =>
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                 />
-                <p className="mt-2 text-xs text-gray-500 italic">Uma notificação será enviada para o seu dispositivo após confirmar.</p>
               </div>
             )}
           </section>
 
-          {/* Delivery Info */}
           <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <h2 className="text-lg font-bold mb-6">Informações de Entrega</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input type="text" placeholder="Nome Completo" className="p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none" defaultValue={user.name} />
               <input type="text" placeholder="Telefone de Contacto" className="p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none" />
               <input type="text" placeholder="Província (ex: Luanda)" className="p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none col-span-1 md:col-span-2" />
-              <textarea placeholder="Endereço detalhado / Ponto de referência" className="p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none col-span-1 md:col-span-2 h-24" />
+              <textarea placeholder="Endereço detalhado" className="p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none col-span-1 md:col-span-2 h-24" />
             </div>
           </section>
         </div>
 
-        {/* Order Summary */}
         <div className="lg:col-span-1">
           <div className="bg-gray-900 text-white rounded-2xl p-6 sticky top-24 shadow-lg">
             <h2 className="text-xl font-bold mb-6 border-b border-gray-700 pb-4">Resumo do Pedido</h2>
             
-            <div className="space-y-4 mb-8 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-4 mb-8 max-h-64 overflow-y-auto pr-2 custom-scrollbar text-sm">
               {cart.map(item => (
-                <div key={item.id} className="flex justify-between items-center text-sm">
-                  <div className="flex flex-col">
-                    <span className="font-medium line-clamp-1">{item.name}</span>
-                    <span className="text-gray-500">Qtd: {item.quantity}</span>
-                  </div>
-                  <span className="font-bold">{(item.price * item.quantity).toLocaleString()} Kz</span>
+                <div key={item.id} className="flex justify-between items-center">
+                  <span className="font-medium truncate mr-2">{item.name} x{item.quantity}</span>
+                  <span className="font-bold whitespace-nowrap">{(item.price * item.quantity).toLocaleString()} Kz</span>
                 </div>
               ))}
             </div>
@@ -173,10 +170,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart, user, clearCart }) =>
               <div className="flex justify-between text-gray-400">
                 <span>Subtotal</span>
                 <span>{total.toLocaleString()} Kz</span>
-              </div>
-              <div className="flex justify-between text-gray-400">
-                <span>Taxa de Entrega</span>
-                <span className="text-green-500 font-bold uppercase text-xs">Grátis</span>
               </div>
               <div className="flex justify-between text-xl font-black pt-2">
                 <span>TOTAL</span>
@@ -189,16 +182,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart, user, clearCart }) =>
               disabled={isProcessing}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-black text-lg transition flex items-center justify-center space-x-2 shadow-lg shadow-blue-900/40"
             >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="animate-spin" />
-                  <span>Processando...</span>
-                </>
-              ) : (
-                <span>Confirmar Pagamento</span>
-              )}
+              {isProcessing ? <Loader2 className="animate-spin" /> : <span>Confirmar Pagamento</span>}
             </button>
-            <p className="text-center text-[10px] text-gray-500 mt-4 uppercase tracking-widest font-bold">Ambiente de Pagamento Seguro</p>
           </div>
         </div>
       </div>

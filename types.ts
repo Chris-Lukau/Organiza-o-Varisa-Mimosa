@@ -30,7 +30,9 @@ export interface Product {
   category: Category;
   brand: string;
   stock: number;
+  minStockThreshold?: number; // Limite para alerta de stock baixo
   imageUrl: string;
+  images?: string[]; // Suporte para galeria completa
 }
 
 export interface CartItem extends Product {

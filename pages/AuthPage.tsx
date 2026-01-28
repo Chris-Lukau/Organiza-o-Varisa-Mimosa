@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+// Fix: Re-importing useNavigate to fix module resolution error
 import { useNavigate } from 'react-router-dom';
 import { Mail, Phone, Lock, Chrome, Loader2, ArrowRight } from 'lucide-react';
 import { User } from '../types';
