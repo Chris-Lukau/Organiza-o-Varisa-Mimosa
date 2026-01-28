@@ -1,9 +1,98 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Users, DollarSign, ShoppingBag, Download, RefreshCw, Zap, Inbox, AlertTriangle } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, ShoppingBag, Download, RefreshCw, Zap, Inbox, AlertTriangle, X, Eye, Package, Calendar, Tag } from 'lucide-react';
 import { getStoreInsights } from '../../services/geminiService';
 import { Order, OrderStatus, Product } from '../../types';
+
+interface OrderDetailsModalProps {
+  order: Order;
+  onClose: () => void;
+}
+
+const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onClose }) => {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in slide-in-from-bottom-4 duration-300">
+        <div className="bg-gray-900 px-8 py-6 flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-black text-white uppercase tracking-tight">Detalhes do Pedido</h2>
+            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-1">ID: {order.id}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition p-2 hover:bg-white/10 rounded-full">
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+              <div className="flex items-center space-x-2 text-gray-400 mb-2">
+                <Users size={14} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Informação do Cliente</span>
+              </div>
+              <p className="font-bold text-gray-900">ID do Utilizador: <span className="text-blue-600">{order.userId}</span></p>
+              <p className="text-xs text-gray-500 mt-1">Status: Registado no Sistema</p>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+              <div className="flex items-center space-x-2 text-gray-400 mb-2">
+                <Calendar size={14} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Data e Pagamento</span>
+              </div>
+              <p className="font-bold text-gray-900">{new Date(order.createdAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+              <p className="text-xs text-blue-600 font-bold mt-1 uppercase tracking-tighter">{order.paymentMethod}</p>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center space-x-2">
+                <Package size={14} />
+                <span>Itens do Pedido ({order.items.length})</span>
+              </h3>
+            </div>
+            <div className="space-y-3">
+              {order.items.map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl hover:border-blue-100 transition-colors">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-50 flex-shrink-0">
+                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">{item.name}</p>
+                      <p className="text-[10px] text-gray-400 font-black uppercase">{item.brand} • {item.quantity} Unidade(s)</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-black text-gray-900">{(item.price * item.quantity).toLocaleString()} Kz</p>
+                    <p className="text-[10px] text-gray-400 font-medium">{item.price.toLocaleString()} un.</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-gray-100 flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Total do Pedido:</span>
+              <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter">Confirmado</span>
+            </div>
+            <div className="text-2xl font-black text-gray-900">{order.total.toLocaleString()} Kz</div>
+          </div>
+        </div>
+
+        <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
+          <button 
+            onClick={onClose}
+            className="px-6 py-3 bg-gray-900 text-white rounded-xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-gray-200 hover:bg-black transition"
+          >
+            Fechar Janela
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface AdminDashboardProps {
   orders: Order[];
@@ -13,6 +102,7 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, products }) => {
   const [insights, setInsights] = useState<string>('');
   const [loadingInsights, setLoadingInsights] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   // Produtos com stock baixo
   const lowStockProducts = useMemo(() => {
@@ -44,7 +134,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, products }) => 
       revenue,
       totalSales: paidOrders.length,
       graphData: last7Days,
-      recent: orders.slice(0, 5)
+      recent: orders.slice(0, 10) // Mostrar mais ordens recentes para gestão
     };
   }, [orders]);
 
@@ -117,7 +207,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, products }) => 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <h3 className="font-bold text-gray-900 mb-6 uppercase text-xs tracking-widest">Histórico de Receita (7 Dias)</h3>
-          {/* Fix: explicit min-height to avoid Recharts height warnings and ensure proper rendering */}
           <div className="h-80 min-h-[320px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={stats.graphData}>
@@ -205,18 +294,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, products }) => 
                 <thead className="bg-gray-50 text-gray-400 text-[10px] font-black uppercase tracking-widest">
                   <tr>
                     <th className="px-6 py-4">ID Pedido</th>
+                    <th className="px-6 py-4">Data</th>
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4 text-right">Total</th>
+                    <th className="px-4 py-4 text-center">Ação</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {stats.recent.map((o) => (
-                    <tr key={o.id} className="hover:bg-gray-50 transition">
+                    <tr 
+                      key={o.id} 
+                      className="hover:bg-blue-50/50 transition cursor-pointer group"
+                      onClick={() => setSelectedOrder(o)}
+                    >
                       <td className="px-6 py-4 font-mono font-bold text-blue-600">{o.id}</td>
+                      <td className="px-6 py-4 text-gray-500 text-xs">{new Date(o.createdAt).toLocaleDateString('pt-PT')}</td>
                       <td className="px-6 py-4">
                         <span className="px-2 py-1 rounded-full text-[10px] font-black uppercase bg-green-100 text-green-700">PAGO</span>
                       </td>
                       <td className="px-6 py-4 text-right font-black">{o.total.toLocaleString()} Kz</td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="flex justify-center">
+                          <Eye size={16} className="text-gray-300 group-hover:text-blue-600 transition" />
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -230,6 +331,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, products }) => 
           )}
         </div>
       </div>
+
+      {selectedOrder && (
+        <OrderDetailsModal 
+          order={selectedOrder} 
+          onClose={() => setSelectedOrder(null)} 
+        />
+      )}
     </div>
   );
 };

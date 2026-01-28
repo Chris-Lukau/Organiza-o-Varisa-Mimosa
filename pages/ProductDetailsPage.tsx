@@ -17,6 +17,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, addTo
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [aiDesc, setAiDesc] = useState<string>('');
+  const [activeImage, setActiveImage] = useState<string>('');
 
   const isAdmin = user?.role === 'admin';
 
@@ -24,6 +25,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, addTo
     const found = products.find(p => p.id === id);
     if (found) {
       setProduct(found);
+      setActiveImage(found.imageUrl); // Define a imagem principal inicial
       generateProductDescription(found.name, found.category, found.brand).then(setAiDesc);
     }
     setLoading(false);
@@ -31,6 +33,9 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, addTo
 
   if (loading) return <div className="p-20 text-center font-bold text-blue-600 animate-pulse text-xs uppercase tracking-widest">Carregando detalhes técnicos...</div>;
   if (!product) return <div className="p-20 text-center font-bold text-red-500 uppercase text-xs tracking-widest">Peça não encontrada no catálogo.</div>;
+
+  // Garante que temos um array de imagens para iterar
+  const productImages = product.images && product.images.length > 0 ? product.images : [product.imageUrl];
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -44,14 +49,29 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, addTo
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 bg-white p-8 md:p-12 rounded-3xl shadow-sm border border-gray-100">
         <div className="space-y-6">
-          <div className="aspect-square bg-gray-50 rounded-2xl overflow-hidden shadow-inner border border-gray-100">
-            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition duration-500" />
+          {/* Visualizador de Imagem Principal */}
+          <div className="aspect-square bg-gray-50 rounded-2xl overflow-hidden shadow-inner border border-gray-100 relative group/main">
+            <img 
+              src={activeImage} 
+              alt={product.name} 
+              className="w-full h-full object-cover transition-all duration-500 ease-in-out transform group-hover/main:scale-110" 
+            />
           </div>
+
+          {/* Miniaturas Interativas */}
           <div className="grid grid-cols-4 gap-4">
-            {(product.images || [product.imageUrl]).slice(0, 4).map((img, i) => (
-              <div key={i} className="aspect-square bg-gray-50 rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-500 transition border border-gray-100">
-                <img src={img} alt="thumb" className="w-full h-full object-cover" />
-              </div>
+            {productImages.map((img, i) => (
+              <button 
+                key={i} 
+                onClick={() => setActiveImage(img)}
+                className={`aspect-square bg-gray-50 rounded-xl overflow-hidden transition-all duration-300 border-2 ${
+                  activeImage === img 
+                    ? 'border-blue-600 ring-4 ring-blue-50 shadow-lg scale-95' 
+                    : 'border-transparent hover:border-gray-200 opacity-70 hover:opacity-100'
+                }`}
+              >
+                <img src={img} alt={`Miniatura ${i + 1}`} className="w-full h-full object-cover" />
+              </button>
             ))}
           </div>
         </div>
@@ -74,7 +94,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ products, addTo
           <div className="space-y-6 mb-10">
             <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
               <h3 className="font-black text-gray-900 mb-2 uppercase text-[10px] tracking-widest">Especificações</h3>
-              <p className="text-gray-600 leading-relaxed font-medium">{product.description}</p>
+              <p className="text-gray-600 leading-relaxed font-medium whitespace-pre-line">{product.description}</p>
             </div>
 
             {aiDesc && (
